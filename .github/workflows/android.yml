@@ -2,7 +2,17 @@ name: react-native-android-build-apk
 on:
   push:
     branches:
-      - master
+      - main
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type (apk or bundle)'
+        required: true
+        default: 'apk'
+        type: choice
+        options:
+          - apk
+          - bundle
 jobs:
   install-and-test:
     runs-on: ubuntu-latest
