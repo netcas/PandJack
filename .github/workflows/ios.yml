@@ -35,11 +35,11 @@ jobs:
       - name: Build Unsigned .app
         run: |
           rm -rf build/
-          xcodebuild -workspace ios/YourProject.xcworkspace \
-            -scheme YourProject \
+          xcodebuild -workspace ios/PandJack.xcworkspace \
+            -scheme PandJack \
             -configuration Release \
             -sdk iphoneos \
-            -archivePath $PWD/build/YourProject.xcarchive \
+            -archivePath $PWD/build/PandJack.xcarchive \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_ENTITLEMENTS="" \
@@ -48,12 +48,12 @@ jobs:
       - name: Package to IPA
         run: |
           mkdir -p Payload
-          cp -r build/YourProject.xcarchive/Products/Applications/*.app Payload/
-          zip -r YourProject_unsigned.ipa Payload
+          cp -r build/PandJack.xcarchive/Products/Applications/*.app Payload/
+          zip -r PandJack_unsigned.ipa Payload
           
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: unsigned-ipa
-          path: YourProject_unsigned.ipa
+          path: PandJack_unsigned.ipa
           retention-days: 5
