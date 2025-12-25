@@ -12,9 +12,11 @@ jobs:
 
       - name: Print Hardware and Runner Config
         run: |
-          echo "--- CPU & Memory ---"
+          echo "--- Hardware Info ---"
           sysctl -n hw.ncpu
           system_profiler SPHardwareDataType | grep "Memory:"
+          echo "--- OS & Tooling ---"
+          sw_vers
           xcodebuild -version
 
       - name: Setup Node
@@ -32,10 +34,11 @@ jobs:
           pod install
           cd ..
 
-      - name: SSH Before Build
-        uses: lhotari/action-upterm@v1
-        with:
-          limit-access-to-actor: false
+      - name: Visualize Structure Before Build
+        run: |
+          brew install tree
+          echo "--- Project File Tree (3 levels) ---"
+          tree -L 3
 
       - name: Build Unsigned .app
         run: |
@@ -50,15 +53,25 @@ jobs:
             CODE_SIGN_ENTITLEMENTS="" \
             CODE_SIGNING_METHOD=manual
 
-      - name: SSH After Build
-        uses: lhotari/action-upterm@v1
-        with:
-          limit-access-to-actor: false
+      - name: Visualize Structure After Build
+        if: always()
+        run: |
+          echo "--- Archive Output Tree ---"
+          if [ -d "build/PandJack.xcarchive" ]; then
+            tree build/PandJack.xcarchive -L 4
+          else
+            echo "Build folder not found."
+          fi
 
       - name: Package to IPA
         run: |
           mkdir -p Payload
+          # Discover the app path dynamically
           APP_PATH=$(find build/PandJack.xcarchive/Products/Applications -name "*.app" | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "Error: .app file not found in archive"
+            exit 1
+          fi
           cp -r "$APP_PATH" Payload/
           zip -r PandJack_unsigned.ipa Payload
           
