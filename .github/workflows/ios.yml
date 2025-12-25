@@ -1,0 +1,59 @@
+name: Build Unsigned iOS IPA
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Print Runner and Environment Config
+        run: |
+          echo '${{ toJSON(runner) }}'
+          sw_vers
+          uname -m
+          xcodebuild -version
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install JS Dependencies
+        run: npm install
+
+      - name: Install Pods
+        run: |
+          cd ios
+          pod install
+          cd ..
+
+      - name: Build Unsigned .app
+        run: |
+          rm -rf build/
+          xcodebuild -workspace ios/YourProject.xcworkspace \
+            -scheme YourProject \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath $PWD/build/YourProject.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_ENTITLEMENTS="" \
+            CODE_SIGNING_METHOD=manual
+
+      - name: Package to IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/YourProject.xcarchive/Products/Applications/*.app Payload/
+          zip -r YourProject_unsigned.ipa Payload
+          
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-ipa
+          path: YourProject_unsigned.ipa
+          retention-days: 5
