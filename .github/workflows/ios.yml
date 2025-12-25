@@ -33,7 +33,7 @@ jobs:
           cd ..
 
       - name: SSH Before Build
-        uses: mxschmitt/action-tmate@v3
+        uses: lhotari/action-upterm@v1
         with:
           limit-access-to-actor: false
 
@@ -51,7 +51,7 @@ jobs:
             CODE_SIGNING_METHOD=manual
 
       - name: SSH After Build
-        uses: mxschmitt/action-tmate@v3
+        uses: lhotari/action-upterm@v1
         with:
           limit-access-to-actor: false
 
