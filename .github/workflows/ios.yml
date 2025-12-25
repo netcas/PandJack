@@ -23,59 +23,59 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
       - name: Install JS Dependencies
         run: npm install
 
       - name: Install Pods
         run: |
-          cd ios
-          pod install
-          cd ..
+          cd ios && pod install && cd ..
 
       - name: Visualize Structure Before Build
         run: |
           brew install tree
-          echo "--- Project File Tree (3 levels) ---"
           tree -L 3
 
       - name: Build Unsigned .app
         run: |
-          rm -rf build/
-          xcodebuild -workspace ios/PandJack.xcworkspace \
+          # Use absolute path for archive output to avoid "not found" errors
+          mkdir -p $GITHUB_WORKSPACE/build
+          
+          xcodebuild archive \
+            -workspace ios/PandJack.xcworkspace \
             -scheme PandJack \
             -configuration Release \
             -sdk iphoneos \
-            -archivePath $PWD/build/PandJack.xcarchive \
+            -destination 'generic/platform=iOS' \
+            -archivePath $GITHUB_WORKSPACE/build/PandJack.xcarchive \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_ENTITLEMENTS="" \
             CODE_SIGNING_METHOD=manual
 
-      - name: Visualize Structure After Build
-        if: always()
-        run: |
-          echo "--- Archive Output Tree ---"
-          if [ -d "build/PandJack.xcarchive" ]; then
-            tree build/PandJack.xcarchive -L 4
-          else
-            echo "Build folder not found."
-          fi
+      - name: SSH Debug Session (Only if Build Fails)
+        if: failure()
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
 
       - name: Package to IPA
+        if: success()
         run: |
           mkdir -p Payload
-          # Discover the app path dynamically
-          APP_PATH=$(find build/PandJack.xcarchive/Products/Applications -name "*.app" | head -n 1)
+          # Locate the .app file regardless of archive folder structure
+          APP_PATH=$(find $GITHUB_WORKSPACE/build -name "*.app" | head -n 1)
           if [ -z "$APP_PATH" ]; then
-            echo "Error: .app file not found in archive"
+            echo "Error: .app file not found in build directory"
+            # Print current directory structure for debugging
+            tree $GITHUB_WORKSPACE/build
             exit 1
           fi
           cp -r "$APP_PATH" Payload/
           zip -r PandJack_unsigned.ipa Payload
           
       - name: Upload IPA Artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: unsigned-ipa
