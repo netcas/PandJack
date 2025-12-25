@@ -10,13 +10,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Print Runner and Environment Config
-        run: |
-          echo '${{ toJSON(runner) }}'
-          sw_vers
-          uname -m
-          xcodebuild -version
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -48,7 +41,9 @@ jobs:
       - name: Package to IPA
         run: |
           mkdir -p Payload
-          cp -r build/PandJack.xcarchive/Products/Applications/*.app Payload/
+          # Automatically find the .app file path inside the archive to avoid "No such file" errors
+          APP_PATH=$(find build/PandJack.xcarchive/Products/Applications -name "*.app" | head -n 1)
+          cp -r "$APP_PATH" Payload/
           zip -r PandJack_unsigned.ipa Payload
           
       - name: Upload IPA Artifact
