@@ -10,6 +10,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Print Hardware and Runner Config
+        run: |
+          echo "--- GitHub Runner Context ---"
+          echo '${{ toJSON(runner) }}'
+          echo "--- CPU Information ---"
+          sysctl -n hw.ncpu
+          sysctl machdep.cpu.brand_string
+          echo "--- Memory Information ---"
+          system_profiler SPHardwareDataType | grep "Memory:"
+          echo "--- OS Details ---"
+          sw_vers
+          uname -m
+          echo "--- Xcode Version ---"
+          xcodebuild -version
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -41,7 +56,6 @@ jobs:
       - name: Package to IPA
         run: |
           mkdir -p Payload
-          # Automatically find the .app file path inside the archive to avoid "No such file" errors
           APP_PATH=$(find build/PandJack.xcarchive/Products/Applications -name "*.app" | head -n 1)
           cp -r "$APP_PATH" Payload/
           zip -r PandJack_unsigned.ipa Payload
