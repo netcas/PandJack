@@ -12,17 +12,9 @@ jobs:
 
       - name: Print Hardware and Runner Config
         run: |
-          echo "--- GitHub Runner Context ---"
-          echo '${{ toJSON(runner) }}'
-          echo "--- CPU Information ---"
+          echo "--- CPU & Memory ---"
           sysctl -n hw.ncpu
-          sysctl machdep.cpu.brand_string
-          echo "--- Memory Information ---"
           system_profiler SPHardwareDataType | grep "Memory:"
-          echo "--- OS Details ---"
-          sw_vers
-          uname -m
-          echo "--- Xcode Version ---"
           xcodebuild -version
 
       - name: Setup Node
@@ -40,6 +32,11 @@ jobs:
           pod install
           cd ..
 
+      - name: SSH Before Build
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
+
       - name: Build Unsigned .app
         run: |
           rm -rf build/
@@ -52,6 +49,11 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_ENTITLEMENTS="" \
             CODE_SIGNING_METHOD=manual
+
+      - name: SSH After Build
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
 
       - name: Package to IPA
         run: |
